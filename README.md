@@ -12,6 +12,8 @@ Interprete Logo in un unico file HTML, con grafica a tartaruga in versione steam
 
 **BREVETTO MECCANICO 1.2 – 1894**
 
+[Puoi giocarci qui](https://tagtthespellcaster.github.io/Calamus-Automaticus/)
+
 ## Requisiti
 
 - Un browser moderno con supporto per HTML5 Canvas e Web Audio.
