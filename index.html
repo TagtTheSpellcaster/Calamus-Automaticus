@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calamus Automaticus</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#1b1f1e;color:#e8c995;font-family:system-ui,sans-serif}
+main{max-width:980px;margin:auto}
+h1{font-family:Georgia,serif;font-weight:normal;letter-spacing:.08em;margin:0 0 12px;font-size:clamp(20px,4.2vw,32px)}
+.frame{border:1px solid #806344;border-radius:9px;overflow:hidden;background:#111514}
+canvas{display:block;width:100%;height:auto}
+.hud{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:9px 12px;background:#292722;color:#e8c995;font:12px ui-monospace,monospace;letter-spacing:.04em}
+button,select,input[type=text]{font-family:inherit}
+button{border:1px solid #99764b;border-radius:5px;background:#38352e;color:#edcf9c;padding:9px 13px;font-size:12px;font-weight:600;cursor:pointer;user-select:none;-webkit-user-select:none}
+button:active,button.on{background:#806344;color:#fff}
+button:disabled{opacity:.4;cursor:default}
+select,input[type=text]{background:#38352e;color:#edcf9c;border:1px solid #99764b;border-radius:5px;padding:8px;font-size:13px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.lab{font:11px ui-monospace,monospace;color:#b9b2a4;letter-spacing:.04em}
+.cols{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;margin-top:10px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+textarea{width:100%;height:300px;resize:vertical;background:#17130f;color:#f0dcb0;border:1px solid #6d5434;border-radius:7px;padding:10px;font:14px/1.5 ui-monospace,Consolas,monospace;tab-size:2}
+textarea:focus,input:focus{outline:2px solid #c79a56}
+.cmd{display:flex;gap:6px;margin-top:8px}
+.cmd input{flex:1;min-width:0;font:14px ui-monospace,Consolas,monospace;background:#17130f;color:#f0dcb0}
+.con{height:300px;overflow:auto;background:#17130f;border:1px solid #6d5434;border-radius:7px;padding:10px;font:13px/1.5 ui-monospace,Consolas,monospace;color:#d9c79a;white-space:pre-wrap;word-break:break-word}
+.con .e{color:#e8886a}.con .m{color:#8e8571}
+.pal{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 0}
+.pal button{padding:6px 9px;font:600 11px ui-monospace,monospace}
+details{margin-top:14px;border:1px solid #6d5434;border-radius:7px;background:#17130f;padding:8px 12px}
+summary{cursor:pointer;color:#edcf9c;font-size:13px;letter-spacing:.04em}
+table{border-collapse:collapse;width:100%;font-size:12px;margin-top:8px}
+th,td{border-bottom:1px solid #3a2f20;padding:5px 7px;text-align:left;vertical-align:top}
+th{color:#c79a56;font-weight:600}
+td.k{font-family:ui-monospace,monospace;color:#f0dcb0;white-space:nowrap}
+td.c{color:#a8885a;font-size:11px}
+.note{font-size:12px;color:#b9b2a4;line-height:1.55}
+.msg{min-height:20px;font-size:13px;color:#eac27f;margin:2px 0}
+.footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:10px;border-top:1px solid #806344;font:11px Georgia,serif;letter-spacing:.14em;color:#a8885a}
+h2{font:600 12px ui-monospace,monospace;letter-spacing:.08em;color:#c79a56;margin:0 0 5px}
+</style>
+</head>
+<body>
+<main>
+<h1>CALAMUS AUTOMATICUS</h1>
+<div class="frame">
+<div class="hud"><span id="stat">&#9881; FERMO</span><span id="pos">x 0 · y 0 · direzione 0 · penna abbassata</span></div>
+<canvas id="cv" width="960" height="560" aria-label="Foglio di disegno dell'automa scrivente"></canvas>
+</div>
+<div class="row">
+<button id="run">ESEGUI IL PROGRAMMA</button>
+<button id="stop">STOP</button>
+<button id="clr">PULISCI SCHERMO</button>
+<label class="lab">VELOCITÀ <select id="speed"><option value="150">lenta</option><option value="450" selected>normale</option><option value="1800">veloce</option><option value="0">istantanea</option></select></label>
+</div>
+<div class="row">
+<button id="snd">SUONO: ON</button>
+<label class="lab">VOLUME <input type="range" id="vol" min="0" max="100" value="70" aria-label="Volume" style="accent-color:#c79a56;width:140px;vertical-align:middle"> <span id="voldb">-</span></label>
+</div>
+<div class="cols">
+<div>
+<h2>PROGRAMMA</h2>
+<textarea id="ed" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Programma Logo"></textarea>
+<div class="pal" id="pal"></div>
+<div class="row"><span class="lab">LESSICO DEI PULSANTI</span><button id="lex">ITALIANO</button></div>
+<div class="cmd"><input type="text" id="cmd" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Riga di comando: scrivi un comando e premi Invio (es. AVANTI 100)" aria-label="Riga di comando"><button id="cmdgo">INVIO</button></div>
+</div>
+<div>
+<h2>CONSOLE</h2>
+<div class="con" id="con" aria-live="polite"></div>
+</div>
+</div>
+<div class="row" style="margin-top:14px">
+<span class="lab">ESEMPI</span><select id="exs"></select><button id="exload">CARICA ESEMPIO</button>
+</div>
+<div class="row">
+<span class="lab">SALVATI NEL BROWSER</span><input type="text" id="nm" maxlength="40" placeholder="nome del programma" aria-label="Nome del programma"><button id="save">SALVA</button>
+<select id="sv" aria-label="Programmi salvati"></select><button id="load">CARICA</button><button id="del">ELIMINA</button>
+</div>
+<div class="row">
+<span class="lab">FILE</span><button id="exp">ESPORTA (.logo)</button><button id="imp">IMPORTA FILE</button><input type="file" id="file" accept=".logo,.txt,text/plain" hidden>
+</div>
+<div class="msg" id="msg"></div>
+<details>
+<summary>GUIDA AI COMANDI (inglese e italiano)</summary>
+<p class="note">Ogni comando si può scrivere in inglese o in italiano, in maiuscolo o minuscolo, anche mescolando le due lingue. Il programma è una sequenza di comandi: l'automa li esegue uno dopo l'altro. Un <b>parametro</b> è un dato che si scrive dopo il comando (<code>AVANTI 100</code>: 100 è il parametro). Una <b>procedura</b> è un nuovo comando creato da te con <code>TO nome ... END</code> (in italiano <code>PER nome ... FINE</code>), che può avere parametri scritti con i due punti (<code>:LATO</code>). Le <b>liste</b> si scrivono fra parentesi quadre. Il centro del foglio è la posizione 0 0; direzione 0 è verso l'alto e gli angoli crescono in senso orario.</p>
+<div id="help"></div>
+<p class="note" id="helpnote"></p>
+</details>
+<p class="note" style="margin-top:12px">Il linguaggio è un sottoinsieme del nucleo di FMSLogo; non tutti i comandi di FMSLogo sono presenti (mancano, fra gli altri, FILL, più tartarughe, suoni, file, WRAP e FENCE). Il programma nell'editor viene salvato automaticamente quando lo esegui.</p>
+<div class="footer"><span>OFFICINA DEGLI ENIGMI · Machina N° 009</span><span>BREVETTO MECCANICO 1.2 – 1894</span></div>
+</main>
+<script>
+(()=>{
+'use strict';
+/* ===== Interprete Logo (sottoinsieme del nucleo di FMSLogo) — nessuna dipendenza dal DOM ===== */
+const PAL=['#000000','#0000ff','#00a000','#00c8c8','#ff0000','#ff00ff','#ffff00','#ffffff','#8b4513','#d2b48c','#228b22','#7fffd4','#fa8072','#800080','#ffa500','#808080'];
+const COLNAMES={black:0,nero:0,blue:1,blu:1,green:2,verde:2,cyan:3,ciano:3,red:4,rosso:4,magenta:5,yellow:6,giallo:6,white:7,bianco:7,brown:8,marrone:8,tan:9,forest:10,aqua:11,salmon:12,salmone:12,purple:13,viola:13,orange:14,arancione:14,gray:15,grey:15,grigio:15};
+class LogoError extends Error{}
+class StopEx{}
+class OutEx{constructor(v){this.v=v}}
+const MAXSTEPS=3000000,MAXOPS=250000,MAXDEPTH=450;
+const NUMRE=/^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i;
+const isNumStr=s=>typeof s==='string'&&NUMRE.test(s);
+const toNumQ=v=>typeof v==='number'?v:(isNumStr(v)?parseFloat(v):NaN);
+function fmtNum(n){if(Number.isInteger(n))return String(n);return String(parseFloat(n.toPrecision(10)))}
+const fmt=v=>typeof v==='number'?fmtNum(v):String(v);
+function showList(v,top){
+  if(Array.isArray(v)){const s=v.map(x=>Array.isArray(x)?'['+showList(x,true)+']':fmt(x)).join(' ');return top?s:'['+s+']'}
+  return fmt(v);
+}
+const ser=a=>a.map(x=>Array.isArray(x)?'['+ser(x)+']':String(x)).join(' ');
+
+/* ---------- lexer ---------- */
+function readList(src,i){
+  const arr=[];i++;const n=src.length;
+  for(;;){
+    while(i<n&&/\s/.test(src[i]))i++;
+    if(i>=n)throw new LogoError('Manca una parentesi quadra chiusa ]');
+    const c=src[i];
+    if(c===';'){while(i<n&&src[i]!=='\n')i++;continue}
+    if(c===']')return {arr:arr,end:i+1};
+    if(c==='['){const r=readList(src,i);arr.push(r.arr);i=r.end;continue}
+    let j=i;while(j<n&&!/[\s\[\]]/.test(src[j]))j++;
+    arr.push(src.slice(i,j));i=j;
+  }
+}
+function lex(src){
+  const out=[],n=src.length;let i=0,nl=false,sp=true;
+  const push=(t,v,raw)=>{const k={t:t,v:v,raw:raw===undefined?String(v):raw,nl:nl,sp:sp};out.push(k);nl=false;sp=false;return k};
+  const DEL=/[\s\[\]()+\-*\/=<>;]/;
+  const NUM=/(\d+\.?\d*|\.\d+)(e[-+]?\d+)?/iy;
+  while(i<n){
+    const c=src[i];
+    if(c==='\n'){nl=true;sp=true;i++;continue}
+    if(/\s/.test(c)){sp=true;i++;continue}
+    if(c===';'){while(i<n&&src[i]!=='\n')i++;continue}
+    if(c==='['){const r=readList(src,i);push('list',r.arr,'[...]');i=r.end;continue}
+    if(c===']')throw new LogoError('Parentesi quadra ] senza la [ corrispondente');
+    if(c==='('||c===')'){push(c,c);i++;continue}
+    if(c==='<'||c==='>'||c==='='){
+      let op=c;const d=src[i+1];
+      if(c==='<'&&(d==='='||d==='>'))op=c+d;else if(c==='>'&&d==='=')op=c+d;
+      push('op',op);i+=op.length;continue;
+    }
+    if(c==='+'||c==='*'||c==='/'){push('op',c);i++;continue}
+    if(c==='-'){
+      const prev=out[out.length-1];
+      const valEnd=prev&&(prev.t==='num'||prev.t==='var'||prev.t==='quote'||prev.t===')'||prev.t==='list');
+      const nx=src[i+1]||' ';
+      const unary=!valEnd||(sp&&!/\s/.test(nx));
+      if(unary&&/[\d.]/.test(nx)){
+        NUM.lastIndex=i+1;const m=NUM.exec(src);
+        if(m&&m.index===i+1){push('num',-parseFloat(m[0]),'-'+m[0]);i+=1+m[0].length;continue}
+      }
+      const k=push('op','-');k.u=unary;i++;continue;
+    }
+    if(/[\d]/.test(c)||(c==='.'&&/\d/.test(src[i+1]||''))){
+      NUM.lastIndex=i;const m=NUM.exec(src);
+      push('num',parseFloat(m[0]),m[0]);i+=m[0].length;continue;
+    }
+    if(c==='"'){let j=i+1;while(j<n&&!/[\s\[\]()]/.test(src[j]))j++;push('quote',src.slice(i+1,j));i=j;continue}
+    if(c===':'){let j=i+1;while(j<n&&!DEL.test(src[j]))j++;push('var',src.slice(i+1,j).toLowerCase());i=j;continue}
+    let j=i;while(j<n&&!DEL.test(src[j]))j++;
+    if(j===i)throw new LogoError('Carattere non valido: '+c);
+    push('word',src.slice(i,j).toLowerCase());i=j;
+  }
+  return out;
+}
+function splitProgram(toks){
+  const defs=[],main=[];
+  for(let i=0;i<toks.length;i++){
+    const t=toks[i];
+    if(t.t==='word'&&(t.v==='to'||t.v==='per')){
+      const nm=toks[i+1];
+      if(!nm||nm.t!=='word')throw new LogoError('Dopo TO (o PER) serve il nome della procedura');
+      i+=2;const params=[];
+      while(i<toks.length&&toks[i].t==='var'&&!toks[i].nl){params.push(toks[i].v);i++}
+      const body=[];
+      while(i<toks.length&&!(toks[i].t==='word'&&(toks[i].v==='end'||toks[i].v==='fine'))){body.push(toks[i]);i++}
+      if(i>=toks.length)throw new LogoError('Manca END (o FINE) alla fine della procedura '+nm.v);
+      defs.push({name:nm.v,params:params,body:body});
+    }else main.push(t);
+  }
+  return {defs:defs,main:main};
+}
+
+/* ---------- primitive ---------- */
+const PRIMS=[];const ALIAS=Object.create(null);
+/* en: nomi inglesi (FMSLogo); it: nomi italiani. Confermati dalla localizzazione italiana di FMSLogo: solo
+   AVANTI, INDIETRO e le abbreviazioni A e I (segnalazioni di bug su SourceForge). Gli altri sono provvisori. */
+function def(en,it,n,f,o){
+  const p=Object.assign({en:en,it:it,n:n,f:f,hard:false},o||{});
+  PRIMS.push(p);
+  en.forEach(k=>{if(ALIAS[k])throw new Error('alias duplicato '+k);ALIAS[k]=p});
+  it.forEach(k=>{if(ALIAS[k])throw new Error('alias duplicato '+k);ALIAS[k]=p});
+  p.hardNames=en;
+}
+const I0=()=>I;   /* istanza corrente, impostata più sotto */
+let I=null;
+const num=(v,who)=>{const x=toNumQ(v);if(Number.isNaN(x))throw new LogoError((who||I.cur)+' non accetta '+showList(v)+' come dato');return x};
+const norm=h=>((h%360)+360)%360;
+function moveTo(x1,y1){const t=I.t;I.emit({k:'mv',x0:t.x,y0:t.y,x1:x1,y1:y1,pd:t.pd,col:t.col,sz:t.sz});t.x=x1;t.y=y1}
+function fwd(d){const t=I.t,r=t.h*Math.PI/180;moveTo(t.x+d*Math.sin(r),t.y+d*Math.cos(r))}
+function turn(d){const t=I.t,h0=t.h;I.emit({k:'tr',h0:h0,h1:h0+d});t.h=norm(h0+d)}
+function setHead(v){const t=I.t,h0=t.h,delta=((norm(v)-h0)%360+540)%360-180;I.emit({k:'tr',h0:h0,h1:h0+delta});t.h=norm(v)}
+function color(v){
+  if(Array.isArray(v)){
+    if(v.length<3)throw new LogoError('Un colore è una lista di tre numeri [rosso verde blu] da 0 a 255');
+    const c=v.slice(0,3).map(x=>Math.max(0,Math.min(255,Math.round(num(x)))));
+    return {css:'rgb('+c.join(',')+')',spec:c};
+  }
+  if(typeof v==='string'&&!isNumStr(v)){
+    const k=v.toLowerCase();
+    if(k in COLNAMES)return {css:PAL[COLNAMES[k]],spec:COLNAMES[k]};
+    throw new LogoError('Non conosco il colore '+v);
+  }
+  const x=Math.round(num(v));
+  if(x<0||x>15)throw new LogoError('I colori numerati vanno da 0 a 15');
+  return {css:PAL[x],spec:x};
+}
+const bool=b=>b?'true':'false';
+function cond(v){const s=String(v).toLowerCase();if(s==='true')return true;if(s==='false')return false;throw new LogoError('Serve TRUE o FALSE (VERO o FALSO), non '+showList(v))}
+function eq(a,b){
+  if(Array.isArray(a)||Array.isArray(b))return Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>eq(x,b[i]));
+  const x=toNumQ(a),y=toNumQ(b);
+  if(!Number.isNaN(x)&&!Number.isNaN(y))return x===y;
+  return String(a).toLowerCase()===String(b).toLowerCase();
+}
+function items(v,who){if(Array.isArray(v))return v;return String(v).split('')}
+
+/* movimento */
+def(['forward','fd'],['avanti','a'],1,a=>{fwd(num(a[0]))},{cat:'Movimento',sig:'distanza',doc:'Avanza della distanza indicata, in passi (unità del disegno).'});
+def(['back','bk'],['indietro','i'],1,a=>{fwd(-num(a[0]))},{cat:'Movimento',sig:'distanza',doc:'Arretra della distanza indicata.'});
+def(['right','rt'],['destra'],1,a=>{turn(num(a[0]))},{cat:'Movimento',sig:'gradi',doc:'Ruota in senso orario. 90 gradi sono un quarto di giro, 360 un giro completo.'});
+def(['left','lt'],['sinistra'],1,a=>{turn(-num(a[0]))},{cat:'Movimento',sig:'gradi',doc:'Ruota in senso antiorario.'});
+def(['home'],['casa'],0,()=>{moveTo(0,0);setHead(0)},{cat:'Movimento',doc:'Torna al centro dello schermo, rivolto verso l\'alto.'});
+def(['setxy'],['impostaxy'],2,a=>{moveTo(num(a[0]),num(a[1]))},{cat:'Movimento',sig:'x y',doc:'Va alla posizione x y (il centro è 0 0; y positiva verso l\'alto). Disegna se la penna è abbassata.'});
+def(['setx'],['impostax'],1,a=>{moveTo(num(a[0]),I.t.y)},{cat:'Movimento',sig:'x',doc:'Cambia solo la coordinata x.'});
+def(['sety'],['impostay'],1,a=>{moveTo(I.t.x,num(a[0]))},{cat:'Movimento',sig:'y',doc:'Cambia solo la coordinata y.'});
+def(['setpos'],['impostapos'],1,a=>{if(!Array.isArray(a[0])||a[0].length<2)throw new LogoError('SETPOS vuole una lista [x y]');moveTo(num(a[0][0]),num(a[0][1]))},{cat:'Movimento',sig:'[x y]',doc:'Come SETXY, ma con una lista.'});
+def(['setheading','seth'],['impostadirezione'],1,a=>{setHead(num(a[0]))},{cat:'Movimento',sig:'gradi',doc:'Imposta la direzione: 0 verso l\'alto, 90 verso destra, 180 verso il basso, 270 verso sinistra.'});
+/* penna e schermo */
+def(['penup','pu'],['alzapenna'],0,()=>{I.t.pd=false;I.emit({k:'pen',pd:false})},{cat:'Penna',doc:'Solleva la penna: i movimenti successivi non lasciano traccia.'});
+def(['pendown','pd'],['abbassapenna'],0,()=>{I.t.pd=true;I.emit({k:'pen',pd:true})},{cat:'Penna',doc:'Abbassa la penna: i movimenti lasciano traccia.'});
+def(['setpencolor','setpc'],['impostacolorepenna'],1,a=>{const c=color(a[0]);I.t.col=c.css;I.t.colspec=c.spec;I.emit({k:'col',col:c.css})},{cat:'Penna',sig:'colore',doc:'Colore della penna: numero da 0 a 15 (0 nero, 1 blu, 2 verde, 3 ciano, 4 rosso, 5 magenta, 6 giallo, 7 bianco, 8 marrone, 9 sabbia, 10 verde scuro, 11 acqua, 12 salmone, 13 viola, 14 arancione, 15 grigio), un nome come "red o "rosso, oppure una lista [rosso verde blu] da 0 a 255.'});
+def(['setpensize'],['impostaspessorepenna'],1,a=>{const v=Array.isArray(a[0])?a[0][0]:a[0];const s=Math.max(1,Math.min(40,num(v)));I.t.sz=s;I.emit({k:'sz',sz:s})},{cat:'Penna',sig:'spessore',doc:'Spessore del tratto (da 1 a 40).'});
+def(['setscreencolor','setsc'],['impostacoloresfondo'],1,a=>{const c=color(a[0]);I.emit({k:'bg',col:c.css})},{cat:'Penna',sig:'colore',doc:'Colore del foglio. I colori si indicano come in SETPC.'});
+def(['hideturtle','ht'],['nascondiautoma'],0,()=>{I.t.vis=false;I.emit({k:'vis',vis:false})},{cat:'Penna',doc:'Nasconde l\'automa (il disegno resta).'});
+def(['showturtle','st'],['mostraautoma'],0,()=>{I.t.vis=true;I.emit({k:'vis',vis:true})},{cat:'Penna',doc:'Mostra l\'automa.'});
+def(['clearscreen','cs'],['pulisciSchermo'.toLowerCase()],0,()=>{const t=I.t;I.emit({k:'cs'});t.x=0;t.y=0;t.h=0},{cat:'Penna',doc:'Cancella il disegno e riporta l\'automa al centro.'});
+def(['clean'],['pulisci'],0,()=>{I.emit({k:'clean'})},{cat:'Penna',doc:'Cancella il disegno senza spostare l\'automa.'});
+def(['label'],['etichetta'],1,a=>{const t=I.t;I.emit({k:'lbl',x:t.x,y:t.y,s:showList(a[0],true),col:t.col})},{cat:'Penna',sig:'testo',doc:'Scrive un testo sul disegno, nella posizione dell\'automa.'});
+/* domande sullo stato */
+def(['xcor'],['coordx'],0,()=>I.t.x,{cat:'Stato',doc:'Coordinata x attuale.'});
+def(['ycor'],['coordy'],0,()=>I.t.y,{cat:'Stato',doc:'Coordinata y attuale.'});
+def(['pos'],['posizione'],0,()=>[I.t.x,I.t.y],{cat:'Stato',doc:'Posizione attuale come lista [x y].'});
+def(['heading'],['direzione'],0,()=>I.t.h,{cat:'Stato',doc:'Direzione attuale in gradi.'});
+def(['pendownp','pendown?'],['penna?'],0,()=>bool(I.t.pd),{cat:'Stato',doc:'VERO se la penna è abbassata.'});
+def(['pencolor','pc'],['colorepenna'],0,()=>I.t.colspec===undefined?0:I.t.colspec,{cat:'Stato',doc:'Colore attuale della penna.'});
+def(['towards'],['verso'],1,a=>{if(!Array.isArray(a[0])||a[0].length<2)throw new LogoError('TOWARDS vuole una lista [x y]');const dx=num(a[0][0])-I.t.x,dy=num(a[0][1])-I.t.y;return norm(Math.atan2(dx,dy)*180/Math.PI)},{cat:'Stato',sig:'[x y]',doc:'Direzione da prendere per puntare verso la posizione indicata.'});
+def(['repcount'],['contaripetizioni'],0,()=>I.rep.length?I.rep[I.rep.length-1]:-1,{cat:'Stato',doc:'Numero della ripetizione in corso dentro REPEAT (1, 2, 3...).'});
+/* controllo */
+def(['repeat'],['ripeti'],2,a=>{
+  const n=Math.floor(num(a[0])),toks=I.tokensOf(a[1]);
+  for(let k=1;k<=n;k++){I.tick();I.rep.push(k);try{I.exec(toks)}finally{I.rep.pop()}}
+},{cat:'Controllo',sig:'n [istruzioni]',doc:'Esegue n volte le istruzioni fra parentesi quadre.'});
+def(['if'],['se'],2,a=>{if(cond(a[0]))return I.evalList(I.tokensOf(a[1]))},{cat:'Controllo',sig:'condizione [istruzioni]',doc:'Esegue le istruzioni solo se la condizione è vera.'});
+def(['ifelse'],['sesenno'],3,a=>I.evalList(I.tokensOf(cond(a[0])?a[1]:a[2])),{cat:'Controllo',sig:'condizione [se vera] [se falsa]',doc:'Esegue il primo gruppo se la condizione è vera, altrimenti il secondo.'});
+def(['while'],['mentre'],2,a=>{
+  const c=I.tokensOf(a[0]),b=I.tokensOf(a[1]);
+  for(;;){I.tick();if(!cond(I.evalList(c)))break;I.exec(b)}
+},{cat:'Controllo',sig:'[condizione] [istruzioni]',doc:'Ripete le istruzioni finché la condizione (scritta fra parentesi quadre) è vera.'});
+def(['for'],['perogni'],2,a=>{
+  if(!Array.isArray(a[0])||a[0].length<3)throw new LogoError('FOR vuole [variabile inizio fine] oppure [variabile inizio fine passo]');
+  const name=String(a[0][0]).toLowerCase(),c={toks:lex(ser(a[0].slice(1))),i:0};
+  const s=num(I.expr(c)),e=num(I.expr(c)),st=c.i<c.toks.length?num(I.expr(c)):(s<=e?1:-1);
+  if(st===0)throw new LogoError('Il passo di FOR non può essere zero');
+  const body=I.tokensOf(a[1]),fr=Object.create(null);I.frames.push(fr);
+  try{for(let v=s;st>0?v<=e+1e-9:v>=e-1e-9;v+=st){I.tick();fr[name]=v;I.exec(body)}}finally{I.frames.pop()}
+},{cat:'Controllo',sig:'[variabile inizio fine passo] [istruzioni]',doc:'Ripete le istruzioni facendo variare la variabile da inizio a fine; il passo è facoltativo.'});
+def(['stop'],['ferma'],0,()=>{throw new StopEx()},{cat:'Controllo',doc:'Termina la procedura in corso.'});
+def(['output','op'],['restituisci'],1,a=>{throw new OutEx(a[0])},{cat:'Controllo',sig:'valore',doc:'Termina la procedura e ne restituisce il valore, così si possono scrivere procedure che calcolano.'});
+def(['run'],['esegui'],1,a=>I.evalList(I.tokensOf(a[0])),{cat:'Controllo',sig:'[istruzioni]',doc:'Esegue una lista come se fosse un programma.'});
+def(['wait'],['attendi'],1,a=>{I.emit({k:'wait',ms:Math.max(0,num(a[0]))*1000/60})},{cat:'Controllo',sig:'n',doc:'Pausa di n sessantesimi di secondo.'});
+/* variabili e stampa */
+def(['make'],['assegna'],2,a=>{I.setVar(String(a[0]).toLowerCase(),a[1])},{cat:'Variabili',sig:'"nome valore',doc:'Crea (o cambia) una variabile. Il nome va preceduto da virgolette; per leggerne il valore si usano i due punti: :nome.'});
+def(['local'],['locale'],1,a=>{const f=I.frames[I.frames.length-1];(Array.isArray(a[0])?a[0]:[a[0]]).forEach(n=>{if(f)f[String(n).toLowerCase()]=0;else I.globals[String(n).toLowerCase()]=0})},{cat:'Variabili',sig:'"nome',doc:'Crea una variabile valida solo dentro la procedura in corso.'});
+def(['thing'],['cosa'],1,a=>I.getVar(String(a[0]).toLowerCase()),{cat:'Variabili',sig:'"nome',doc:'Valore della variabile con quel nome (come :nome).'});
+def(['print','pr'],['scrivi'],1,a=>{I.emit({k:'print',s:a.map(x=>showList(x,true)).join(' ')})},{cat:'Stampa',sig:'valore',va:true,doc:'Scrive nella console e va a capo. Con le parentesi accetta più valori: (PRINT 1 2 3).'});
+def(['show'],['mostra'],1,a=>{I.emit({k:'print',s:a.map(x=>showList(x,false)).join(' ')})},{cat:'Stampa',sig:'valore',va:true,doc:'Come PRINT, ma le liste conservano le parentesi quadre.'});
+def(['type'],['digita'],1,a=>{I.emit({k:'print',s:a.map(x=>showList(x,true)).join(' '),nonl:true})},{cat:'Stampa',sig:'valore',va:true,doc:'Come PRINT, ma senza andare a capo.'});
+/* liste e parole */
+def(['list'],['lista'],2,a=>a.slice(),{cat:'Liste',sig:'a b',va:true,doc:'Crea una lista con i valori dati.'});
+def(['sentence'],['frase'],2,a=>{const o=[];a.forEach(x=>{if(Array.isArray(x))o.push(...x);else o.push(x)});return o},{cat:'Liste',sig:'a b',va:true,doc:'Unisce valori e liste in un\'unica lista.'});
+def(['word'],['parola'],2,a=>a.map(x=>fmt(x)).join(''),{cat:'Liste',sig:'a b',va:true,doc:'Unisce parole in una sola.'});
+def(['fput'],['mettiprimo'],2,a=>{if(!Array.isArray(a[1]))throw new LogoError('FPUT vuole una lista come secondo dato');return [a[0]].concat(a[1])},{cat:'Liste',sig:'elemento lista',doc:'Inserisce un elemento all\'inizio della lista.'});
+def(['lput'],['mettiultimo'],2,a=>{if(!Array.isArray(a[1]))throw new LogoError('LPUT vuole una lista come secondo dato');return a[1].concat([a[0]])},{cat:'Liste',sig:'elemento lista',doc:'Inserisce un elemento in fondo alla lista.'});
+def(['first'],['primo'],1,a=>{const l=items(a[0]);if(!l.length)throw new LogoError('FIRST non funziona su un dato vuoto');return l[0]},{cat:'Liste',sig:'lista',doc:'Primo elemento di una lista (o primo carattere di una parola).'});
+def(['last'],['ultimo'],1,a=>{const l=items(a[0]);if(!l.length)throw new LogoError('LAST non funziona su un dato vuoto');return l[l.length-1]},{cat:'Liste',sig:'lista',doc:'Ultimo elemento.'});
+def(['butfirst','bf'],['senzaprimo'],1,a=>{const l=items(a[0]);if(!l.length)throw new LogoError('BUTFIRST non funziona su un dato vuoto');return Array.isArray(a[0])?l.slice(1):l.slice(1).join('')},{cat:'Liste',sig:'lista',doc:'Tutto tranne il primo elemento.'});
+def(['butlast','bl'],['senzaultimo'],1,a=>{const l=items(a[0]);if(!l.length)throw new LogoError('BUTLAST non funziona su un dato vuoto');return Array.isArray(a[0])?l.slice(0,-1):l.slice(0,-1).join('')},{cat:'Liste',sig:'lista',doc:'Tutto tranne l\'ultimo elemento.'});
+def(['count'],['conta'],1,a=>items(a[0]).length,{cat:'Liste',sig:'lista',doc:'Numero di elementi (o di caratteri).'});
+def(['item'],['elemento'],2,a=>{const l=items(a[1]),k=Math.floor(num(a[0]));if(k<1||k>l.length)throw new LogoError('ITEM: non esiste l\'elemento numero '+k);return l[k-1]},{cat:'Liste',sig:'n lista',doc:'Elemento numero n (il primo è 1).'});
+def(['emptyp','empty?'],['vuoto?'],1,a=>bool(items(a[0]).length===0),{cat:'Liste',sig:'dato',doc:'VERO se la lista o la parola è vuota.'});
+def(['listp','list?'],['lista?'],1,a=>bool(Array.isArray(a[0])),{cat:'Liste',sig:'dato',doc:'VERO se il dato è una lista.'});
+def(['wordp','word?'],['parola?'],1,a=>bool(!Array.isArray(a[0])),{cat:'Liste',sig:'dato',doc:'VERO se il dato è una parola o un numero.'});
+def(['numberp','number?'],['numero?'],1,a=>bool(!Number.isNaN(toNumQ(a[0]))),{cat:'Liste',sig:'dato',doc:'VERO se il dato è un numero.'});
+def(['equalp','equal?'],['uguale?'],2,a=>bool(eq(a[0],a[1])),{cat:'Liste',sig:'a b',doc:'VERO se i due dati sono uguali (come l\'operatore =).'});
+/* numeri */
+def(['sum'],['somma'],2,a=>a.reduce((s,x)=>s+num(x),0),{cat:'Numeri',sig:'a b',va:true,doc:'Somma (come +).'});
+def(['difference'],['differenza'],2,a=>num(a[0])-num(a[1]),{cat:'Numeri',sig:'a b',doc:'Sottrazione (come -).'});
+def(['product'],['prodotto'],2,a=>a.reduce((s,x)=>s*num(x),1),{cat:'Numeri',sig:'a b',va:true,doc:'Moltiplicazione (come *).'});
+def(['quotient'],['quoziente'],2,a=>{const d=num(a[1]);if(d===0)throw new LogoError('Divisione per zero');return num(a[0])/d},{cat:'Numeri',sig:'a b',doc:'Divisione (come /).'});
+def(['remainder'],['resto'],2,a=>{const d=num(a[1]);if(d===0)throw new LogoError('Divisione per zero');return num(a[0])%d},{cat:'Numeri',sig:'a b',doc:'Resto della divisione.'});
+def(['int'],['intero'],1,a=>Math.trunc(num(a[0])),{cat:'Numeri',sig:'n',doc:'Parte intera (toglie i decimali).'});
+def(['round'],['arrotonda'],1,a=>Math.round(num(a[0])),{cat:'Numeri',sig:'n',doc:'Arrotonda all\'intero più vicino.'});
+def(['sqrt'],['radice'],1,a=>{const x=num(a[0]);if(x<0)throw new LogoError('SQRT non accetta numeri negativi');return Math.sqrt(x)},{cat:'Numeri',sig:'n',doc:'Radice quadrata.'});
+def(['abs'],['assoluto'],1,a=>Math.abs(num(a[0])),{cat:'Numeri',sig:'n',doc:'Valore assoluto (toglie il segno).'});
+def(['sin'],['seno'],1,a=>Math.sin(num(a[0])*Math.PI/180),{cat:'Numeri',sig:'gradi',doc:'Seno di un angolo in gradi.'});
+def(['cos'],['coseno'],1,a=>Math.cos(num(a[0])*Math.PI/180),{cat:'Numeri',sig:'gradi',doc:'Coseno di un angolo in gradi.'});
+def(['arctan'],['arcotangente'],1,a=>Math.atan(num(a[0]))*180/Math.PI,{cat:'Numeri',sig:'n',doc:'Arcotangente, risultato in gradi.'});
+def(['power'],['potenza'],2,a=>Math.pow(num(a[0]),num(a[1])),{cat:'Numeri',sig:'base esponente',doc:'Elevamento a potenza.'});
+def(['exp'],['esponenziale'],1,a=>Math.exp(num(a[0])),{cat:'Numeri',sig:'n',doc:'e elevato a n.'});
+def(['ln'],['logaritmo'],1,a=>{const x=num(a[0]);if(x<=0)throw new LogoError('LN vuole un numero positivo');return Math.log(x)},{cat:'Numeri',sig:'n',doc:'Logaritmo naturale.'});
+def(['random'],['casuale'],1,a=>Math.floor(I.rand()*Math.max(0,Math.floor(num(a[0])))),{cat:'Numeri',sig:'n',doc:'Numero intero a caso da 0 a n-1.'});
+def(['pi'],['pigreco'],0,()=>Math.PI,{cat:'Numeri',doc:'Il numero pi greco (3,14159...).'});
+/* logica */
+def(['and'],['e'],2,a=>bool(a.every(x=>cond(x))),{cat:'Logica',sig:'a b',va:true,doc:'VERO se tutte le condizioni sono vere.'});
+def(['or'],['o'],2,a=>bool(a.some(x=>cond(x))),{cat:'Logica',sig:'a b',va:true,doc:'VERO se almeno una condizione è vera.'});
+def(['not'],['non'],1,a=>bool(!cond(a[0])),{cat:'Logica',sig:'a',doc:'Inverte VERO e FALSO.'});
+def(['true'],['vero'],0,()=>'true',{cat:'Logica',doc:'Il valore vero.'});
+def(['false'],['falso'],0,()=>'false',{cat:'Logica',doc:'Il valore falso.'});
+const HARD=new Set();PRIMS.forEach(p=>p.en.forEach(k=>HARD.add(k)));['to','end'].forEach(k=>HARD.add(k));
+
+/* ---------- interprete ---------- */
+class Interp{
+  constructor(){this.rand=Math.random;this.reset()}
+  reset(){
+    this.procs=Object.create(null);this.globals=Object.create(null);this.frames=[];this.ops=[];
+    this.steps=0;this.depth=0;this.rep=[];this.cache=new WeakMap();this.cur='';
+    this.t={x:0,y:0,h:0,pd:true,col:PAL[0],colspec:0,sz:1,vis:true};
+  }
+  takeOps(){const o=this.ops;this.ops=[];return o}
+  emit(op){if(this.ops.length>=MAXOPS)throw new LogoError('Troppi movimenti da disegnare (limite '+MAXOPS+'): c\'è forse un ciclo infinito?');this.ops.push(op)}
+  tick(){if(++this.steps>MAXSTEPS)throw new LogoError('Il programma ha eseguito troppi passi (limite 3.000.000): probabile ciclo infinito')}
+  tokensOf(l){
+    if(Array.isArray(l)){let t=this.cache.get(l);if(!t){t=lex(ser(l));this.cache.set(l,t)}return t}
+    return lex(String(l));
+  }
+  getVar(n){
+    for(let k=this.frames.length-1;k>=0;k--)if(n in this.frames[k])return this.frames[k][n];
+    if(n in this.globals)return this.globals[n];
+    throw new LogoError(n+' non ha un valore');
+  }
+  setVar(n,v){
+    for(let k=this.frames.length-1;k>=0;k--)if(n in this.frames[k]){this.frames[k][n]=v;return}
+    this.globals[n]=v;
+  }
+  run(src){
+    this.steps=0;this.depth=0;this.frames=[];this.rep=[];
+    try{
+      const sp=splitProgram(lex(src));
+      sp.defs.forEach(d=>{
+        if(HARD.has(d.name))throw new LogoError(d.name.toUpperCase()+' è già un comando del linguaggio: scegli un altro nome per la procedura');
+        this.procs[d.name]=d;
+      });
+      this.exec(sp.main);
+    }catch(e){
+      if(e instanceof LogoError)this.ops.push({k:'err',s:e.message});
+      else if(e instanceof RangeError)this.ops.push({k:'err',s:'Ricorsione troppo profonda: una procedura continua a richiamare sé stessa senza fermarsi'});
+      else if(e instanceof StopEx||e instanceof OutEx){}
+      else throw e;
+    }
+  }
+  evalList(toks){
+    const c={toks:toks,i:0};let last;
+    while(c.i<toks.length){
+      const v=this.expr(c);
+      if(v!==undefined){if(c.i>=toks.length){last=v;break}throw new LogoError('Non hai detto cosa fare con '+showList(v))}
+    }
+    return last;
+  }
+  exec(toks){const v=this.evalList(toks);if(v!==undefined)throw new LogoError('Non hai detto cosa fare con '+showList(v))}
+  expr(c){this.tick();return this.cmp(c)}
+  cmp(c){
+    let a=this.add(c);
+    for(;;){
+      const t=c.toks[c.i];
+      if(t&&t.t==='op'&&(t.v==='='||t.v==='<>'||t.v==='<'||t.v==='>'||t.v==='<='||t.v==='>=')){
+        c.i++;const b=this.add(c);
+        if(a===undefined||b===undefined)throw new LogoError('Manca un valore da confrontare');
+        if(t.v==='=')a=bool(eq(a,b));else if(t.v==='<>')a=bool(!eq(a,b));
+        else{const x=num(a,t.v),y=num(b,t.v);a=bool(t.v==='<'?x<y:t.v==='>'?x>y:t.v==='<='?x<=y:x>=y)}
+      }else return a;
+    }
+  }
+  add(c){
+    let a=this.mul(c);
+    for(;;){
+      const t=c.toks[c.i];
+      if(t&&t.t==='op'&&(t.v==='+'||(t.v==='-'&&!t.u))){
+        c.i++;const b=this.mul(c);
+        if(a===undefined||b===undefined)throw new LogoError('Manca un valore per l\'operatore '+t.v);
+        a=t.v==='+'?num(a,'+')+num(b,'+'):num(a,'-')-num(b,'-');
+      }else return a;
+    }
+  }
+  mul(c){
+    let a=this.unary(c);
+    for(;;){
+      const t=c.toks[c.i];
+      if(t&&t.t==='op'&&(t.v==='*'||t.v==='/')){
+        c.i++;const b=this.unary(c);
+        if(a===undefined||b===undefined)throw new LogoError('Manca un valore per l\'operatore '+t.v);
+        if(t.v==='*')a=num(a,'*')*num(b,'*');
+        else{const d=num(b,'/');if(d===0)throw new LogoError('Divisione per zero');a=num(a,'/')/d}
+      }else return a;
+    }
+  }
+  unary(c){
+    const t=c.toks[c.i];
+    if(t&&t.t==='op'&&t.v==='-'){c.i++;const v=this.unary(c);if(v===undefined)throw new LogoError('Manca un numero dopo il segno -');return -num(v,'-')}
+    return this.prim(c);
+  }
+  arg(c,who){
+    if(c.i>=c.toks.length)throw new LogoError('Mancano dei dati per '+who.toUpperCase());
+    const v=this.expr(c);
+    if(v===undefined)throw new LogoError('Un comando che non restituisce un valore è stato usato come dato per '+who.toUpperCase());
+    return v;
+  }
+  prim(c){
+    const t=c.toks[c.i++];
+    if(!t)throw new LogoError('L\'espressione è incompleta');
+    switch(t.t){
+      case 'num':case 'quote':return t.t==='num'?t.v:t.v;
+      case 'list':return t.v;
+      case 'var':return this.getVar(t.v);
+      case '(':{
+        const nx=c.toks[c.i];
+        if(nx&&nx.t==='word'&&!this.procs[nx.v]&&ALIAS[nx.v]&&ALIAS[nx.v].va){
+          c.i++;const args=[];
+          while(c.i<c.toks.length&&c.toks[c.i].t!==')')args.push(this.arg(c,nx.v));
+          if(c.i>=c.toks.length)throw new LogoError('Manca una parentesi chiusa )');
+          c.i++;this.cur=nx.v;return ALIAS[nx.v].f(args,this);
+        }
+        const v=this.expr(c);const cl=c.toks[c.i++];
+        if(!cl||cl.t!==')')throw new LogoError('Manca una parentesi chiusa )');
+        return v;
+      }
+      case 'word':return this.callWord(t.v,c);
+      default:throw new LogoError('Simbolo inatteso: '+t.raw);
+    }
+  }
+  callWord(name,c){
+    const p=this.procs[name];
+    if(p){const args=[];for(let k=0;k<p.params.length;k++)args.push(this.arg(c,name));return this.callProc(p,args)}
+    const pr=ALIAS[name];
+    if(pr){const args=[];for(let k=0;k<pr.n;k++)args.push(this.arg(c,name));this.cur=name.toUpperCase();return pr.f(args,this)}
+    throw new LogoError('Non so come fare a '+name.toUpperCase()+' (procedura sconosciuta)');
+  }
+  callProc(p,args){
+    if(this.depth>=MAXDEPTH)throw new LogoError('Ricorsione troppo profonda (oltre '+MAXDEPTH+' livelli): una procedura continua a richiamare sé stessa senza fermarsi');
+    this.depth++;const fr=Object.create(null);p.params.forEach((n,k)=>{fr[n]=args[k]});this.frames.push(fr);
+    try{this.exec(p.body)}
+    catch(e){if(e instanceof OutEx)return e.v;if(e instanceof StopEx)return undefined;throw e}
+    finally{this.frames.pop();this.depth--}
+    return undefined;
+  }
+}
+I=new Interp();
+
+/* ---------- esempi ---------- */
+const EXAMPLES=[
+ {name:'Quadrato (italiano)',text:'; Un quadrato: quattro lati e quattro angoli retti\nRIPETI 4 [AVANTI 100 DESTRA 90]\n'},
+ {name:'Poligoni con una procedura (inglese)',text:'; TO ... END definisce un nuovo comando con due parametri\nTO POLY :SIDES :LEN\n  REPEAT :SIDES [FD :LEN RT 360 / :SIDES]\nEND\n\nPOLY 5 80\nPU RT 90 FD 200 LT 90 PD\nPOLY 8 60\n'},
+ {name:'Stella (italiano)',text:'PER STELLA :L\n  RIPETI 5 [AVANTI :L DESTRA 144]\nFINE\n\nIMPOSTACOLOREPENNA 4\nSTELLA 200\n'},
+ {name:'Fiore di quadrati (inglese)',text:'SETPC 1\nREPEAT 36 [RT 10 REPEAT 4 [FD 70 RT 90]]\n'},
+ {name:'Spirale ricorsiva (italiano)',text:'; Una procedura che richiama sé stessa, con una condizione di arresto\nPER SPIRALE :L\n  SE :L > 220 [FERMA]\n  AVANTI :L\n  DESTRA 91\n  SPIRALE :L + 2\nFINE\n\nALZAPENNA SETXY -60 -40 ABBASSAPENNA\nSPIRALE 2\n'},
+ {name:'Albero ricorsivo (inglese)',text:'TO TREE :SIZE\n  IF :SIZE < 8 [STOP]\n  FD :SIZE\n  LT 30\n  TREE :SIZE * 0.7\n  RT 60\n  TREE :SIZE * 0.7\n  LT 30\n  BK :SIZE\nEND\n\nPU SETXY 0 -250 PD\nSETPC 2\nTREE 110\n'},
+ {name:'Fiocco di Koch (inglese)',text:'; Curva di Koch: ogni segmento viene sostituito da quattro segmenti più piccoli\nTO KOCH :N :L\n  IF :N = 0 [FD :L STOP]\n  KOCH :N - 1 :L / 3\n  LT 60\n  KOCH :N - 1 :L / 3\n  RT 120\n  KOCH :N - 1 :L / 3\n  LT 60\n  KOCH :N - 1 :L / 3\nEND\n\nPU SETXY -200 100 RT 90 PD\nSETPC 3\nREPEAT 3 [KOCH 3 400 RT 120]\n'},
+ {name:'Ruota dentata (italiano)',text:'; Una ruota dentata: un cerchio e tanti denti quadrati\nPER DENTE :R\n  ; parte dal centro verso l\'alto e torna al centro\n  ALZAPENNA AVANTI :R DESTRA 90 INDIETRO 7 ABBASSAPENNA\n  AVANTI 14 SINISTRA 90 AVANTI 14 SINISTRA 90 AVANTI 14 SINISTRA 90 AVANTI 14\n  ALZAPENNA SINISTRA 90 AVANTI 7 DESTRA 90 AVANTI :R DESTRA 180 ABBASSAPENNA\nFINE\n\nPER RUOTA :DENTI :R\n  ; il cerchio è un poligono di 90 lati: si parte mezzo lato prima della cima per centrarlo\n  ALZAPENNA AVANTI :R DESTRA 90 INDIETRO :R * 0.03488 ABBASSAPENNA\n  RIPETI 90 [AVANTI :R * 0.06976 DESTRA 4]\n  ALZAPENNA AVANTI :R * 0.03488 SINISTRA 90 INDIETRO :R ABBASSAPENNA\n  RIPETI :DENTI [DENTE :R DESTRA 360 / :DENTI]\nFINE\n\nIMPOSTACOLOREPENNA 8\nIMPOSTASPESSOREPENNA 2\nRUOTA 16 110\n'},
+ {name:'Variabili e MENTRE (italiano)',text:'; ASSEGNA crea una variabile; :I ne legge il valore\nASSEGNA "I 1\nMENTRE [:I < 14] [AVANTI :I * 8 DESTRA 40 ASSEGNA "I :I + 1]\nSCRIVI "Fatto!\n'}
+];
+
+const W=960,H=560,$=id=>document.getElementById(id);
+const cv=$('cv'),ctx=cv.getContext('2d'),DPR=Math.min(2,window.devicePixelRatio||1);
+cv.width=W*DPR;cv.height=H*DPR;
+const lay=document.createElement('canvas');lay.width=W*DPR;lay.height=H*DPR;
+const lc=lay.getContext('2d');lc.scale(DPR,DPR);ctx.scale(DPR,DPR);
+const PAPER='#efe3c2';
+/* ---------- memoria locale ---------- */
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+};
+function progs(){try{const o=JSON.parse(store.get('co_progs','{}'));return o&&typeof o==='object'?o:{}}catch(e){return {}}}
+function saveProgs(o){return store.set('co_progs',JSON.stringify(o))}
+/* ---------- riproduzione ---------- */
+const P={q:[],qi:0,cur:null,wait:0,ps:{x:0,y:0,h:0,pd:true,col:'#000',sz:1,vis:true},bg:PAPER,steam:[]};
+const X=x=>W/2+x,Y=y=>H/2-y;
+const con=$('con');
+function conPrint(s,cls,nonl){
+  let last=con.lastElementChild;
+  if(!cls&&last&&last.dataset.open==='1'){last.textContent+=s;if(!nonl)last.dataset.open='0'}
+  else{const d=document.createElement('div');if(cls)d.className=cls;d.textContent=s;if(nonl&&!cls)d.dataset.open='1';con.appendChild(d)}
+  con.scrollTop=con.scrollHeight;
+}
+function seg(x0,y0,x1,y1,col,sz){
+  lc.strokeStyle=col;lc.lineWidth=sz+0.4;lc.lineCap='round';
+  lc.beginPath();lc.moveTo(X(x0),Y(y0));lc.lineTo(X(x1),Y(y1));lc.stroke();
+}
+function resetPlayer(){
+  P.q=[];P.qi=0;P.cur=null;P.wait=0;
+  P.ps={x:0,y:0,h:0,pd:true,col:'#000000',sz:1,vis:true};
+  lc.clearRect(0,0,W,H);P.bg=PAPER;
+}
+function immediate(op){
+  const ps=P.ps;
+  switch(op.k){
+    case 'pen':ps.pd=op.pd;if(parseFloat($('speed').value)>0)Snd.pen(op.pd);return true;
+    case 'col':ps.col=op.col;return true;
+    case 'sz':ps.sz=op.sz;return true;
+    case 'vis':ps.vis=op.vis;return true;
+    case 'bg':P.bg=op.col;return true;
+    case 'cs':lc.clearRect(0,0,W,H);ps.x=0;ps.y=0;ps.h=0;return true;
+    case 'clean':lc.clearRect(0,0,W,H);return true;
+    case 'lbl':lc.fillStyle=op.col;lc.font='16px Georgia,serif';lc.textBaseline='alphabetic';lc.fillText(op.s,X(op.x),Y(op.y));return true;
+    case 'print':conPrint(op.s,'',!!op.nonl);return true;
+    case 'err':conPrint('Errore: '+op.s,'e');Snd.err();return true;
+  }
+  return false;
+}
+function advance(dt){
+  const sp=parseFloat($('speed').value),inst=sp===0,t0=performance.now();
+  let bpx=inst?Infinity:sp*dt,bdeg=inst?Infinity:sp*0.8*dt,moved=false,turned=false;
+  const ps=P.ps;
+  while(P.qi<P.q.length){
+    if(inst&&performance.now()-t0>12)break;
+    const op=P.q[P.qi];
+    if(immediate(op)){P.qi++;continue}
+    if(op.k==='mv'){
+      if(!P.cur)P.cur={d:0,L:Math.hypot(op.x1-op.x0,op.y1-op.y0)};
+      const rem=P.cur.L-P.cur.d;
+      if(rem>1e-9&&bpx<=0)break;
+      const st=Math.min(rem,bpx),a=P.cur.d,b=a+st,L=P.cur.L||1;
+      const xa=op.x0+(op.x1-op.x0)*a/L,ya=op.y0+(op.y1-op.y0)*a/L;
+      const xb=rem<=bpx?op.x1:op.x0+(op.x1-op.x0)*b/L,yb=rem<=bpx?op.y1:op.y0+(op.y1-op.y0)*b/L;
+      if(op.pd&&st>0)seg(xa,ya,xb,yb,op.col,op.sz);
+      ps.x=xb;ps.y=yb;P.cur.d=b;bpx-=st;if(st>0)moved=true;
+      if(rem<=bpx+st||P.cur.d>=P.cur.L-1e-9){ps.x=op.x1;ps.y=op.y1;P.cur=null;P.qi++;continue}
+      break;
+    }
+    if(op.k==='tr'){
+      if(!P.cur)P.cur={d:0,L:Math.abs(op.h1-op.h0)};
+      const rem=P.cur.L-P.cur.d;
+      if(rem>1e-9&&bdeg<=0)break;
+      const st=Math.min(rem,bdeg);P.cur.d+=st;bdeg-=st;if(st>0&&!inst){turned=true;P.tacc=(P.tacc||0)+st;while(P.tacc>=14){P.tacc-=14;Snd.click()}}
+      const f=P.cur.L?P.cur.d/P.cur.L:1;
+      ps.h=op.h0+(op.h1-op.h0)*Math.min(1,f);
+      if(P.cur.d>=P.cur.L-1e-9){ps.h=((op.h1%360)+360)%360;P.cur=null;P.qi++;continue}
+      break;
+    }
+    if(op.k==='wait'){
+      if(inst){P.qi++;continue}
+      if(!P.cur)P.cur={left:op.ms};
+      P.cur.left-=dt*1000;
+      if(P.cur.left<=0){P.cur=null;P.qi++;continue}
+      break;
+    }
+    P.qi++;
+  }
+  if(moved&&!inst&&ps.vis&&Math.random()<0.5)P.steam.push({x:ps.x,y:ps.y,r:2+Math.random()*2,life:1,vx:(Math.random()-.5)*10,vy:6+Math.random()*10});
+  Snd.update(moved&&!inst,turned&&!inst,sp);
+  if(P.qi>=P.q.length&&P.q.length){P.q=[];P.qi=0;P.cur=null}
+}
+const busy=()=>P.qi<P.q.length;
+
+/* ---------- suoni (sintetizzati; nessuna colonna sonora) ---------- */
+const volGain=v=>v<=0?0:Math.pow(10,((v/100)*50-50)/20);
+let sndOn=store.get('co_snd','1')!=='0',sndVol=parseInt(store.get('co_vol','70'),10);
+if(!(sndVol>=0&&sndVol<=100))sndVol=70;
+const Snd={ac:null,m:null,mv:null,lfo:null,tg:null,noise:null,lastClick:0,tacc:0,mvT:0,tgT:0,
+  init(){
+    if(this.ac)return;
+    let ac;try{ac=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return}
+    this.ac=ac;
+    const comp=ac.createDynamicsCompressor();this.m=ac.createGain();this.m.connect(comp);comp.connect(ac.destination);this.applyVol();
+    const nb=ac.createBuffer(1,ac.sampleRate,ac.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.noise=nb;
+    /* motore a vapore: sega bassa + soffio, modulati dal "ciuf" (LFO) */
+    this.mv=ac.createGain();this.mv.gain.value=0;this.mv.connect(this.m);
+    const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=46;
+    const o2=ac.createOscillator();o2.type='square';o2.frequency.value=69;
+    const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=260;
+    const env=ac.createGain();env.gain.value=.55;
+    const og=ac.createGain();og.gain.value=.5;const og2=ac.createGain();og2.gain.value=.12;
+    o.connect(og);o2.connect(og2);og.connect(lp);og2.connect(lp);lp.connect(env);env.connect(this.mv);
+    const ns=ac.createBufferSource();ns.buffer=nb;ns.loop=true;
+    const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1100;bp.Q.value=.8;
+    const ng=ac.createGain();ng.gain.value=.5;const env2=ac.createGain();env2.gain.value=.35;
+    ns.connect(bp);bp.connect(ng);ng.connect(env2);env2.connect(this.mv);
+    const lfo=ac.createOscillator();lfo.type='sine';lfo.frequency.value=5;
+    const l1=ac.createGain();l1.gain.value=.5;const l2=ac.createGain();l2.gain.value=.33;
+    lfo.connect(l1);l1.connect(env.gain);lfo.connect(l2);l2.connect(env2.gain);
+    this.lfo=lfo;o.start();o2.start();ns.start();lfo.start();
+    /* servo che gira */
+    this.tg=ac.createGain();this.tg.gain.value=0;this.tg.connect(this.m);
+    const t=ac.createOscillator();t.type='triangle';t.frequency.value=330;
+    const tl=ac.createBiquadFilter();tl.type='lowpass';tl.frequency.value=900;t.connect(tl);tl.connect(this.tg);t.start();
+  },
+  applyVol(){if(this.m)this.m.gain.value=sndOn?volGain(sndVol):0},
+  resume(){this.init();if(this.ac&&this.ac.state==='suspended')this.ac.resume()},
+  burst(f,q,dur,g,type){
+    const ac=this.ac;if(!ac||!sndOn)return;const t=ac.currentTime;
+    const s=ac.createBufferSource();s.buffer=this.noise;
+    const fl=ac.createBiquadFilter();fl.type=type||'bandpass';fl.frequency.value=f;fl.Q.value=q;
+    const gn=ac.createGain();gn.gain.setValueAtTime(g,t);gn.gain.exponentialRampToValueAtTime(.0005,t+dur);
+    s.connect(fl);fl.connect(gn);gn.connect(this.m);s.start(t,Math.random()*.5);s.stop(t+dur+.02);
+  },
+  tone(f,dur,g,type,f2){
+    const ac=this.ac;if(!ac||!sndOn)return;const t=ac.currentTime,o=ac.createOscillator(),gn=ac.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+    gn.gain.setValueAtTime(0,t);gn.gain.linearRampToValueAtTime(g,t+.004);gn.gain.exponentialRampToValueAtTime(.0005,t+dur);
+    o.connect(gn);gn.connect(this.m);o.start(t);o.stop(t+dur+.02);
+  },
+  click(){ /* scatto di cricchetto */
+    const now=performance.now();if(now-this.lastClick<38)return;this.lastClick=now;
+    this.burst(2600,2,.03,.35,'bandpass');this.tone(880,.025,.12,'triangle',620);
+  },
+  pen(down){this.tone(down?150:230,.07,.3,'sine',down?90:150);this.burst(1500,1,.03,.2)},
+  err(){this.tone(180,.35,.18,'sawtooth',60);this.burst(1200,.7,.3,.12,'highpass')},
+  update(moving,turning,speed){
+    if(!this.ac)return;
+    const t=this.ac.currentTime;
+    /* a riposo il motore resta acceso, molto piano e con un ciuf lento */
+    const lvl=moving?.55:turning?.25:.06,rate=moving?Math.max(2.5,Math.min(9,speed/60)):turning?3.5:1.5;
+    this.mv.gain.setTargetAtTime(sndOn?lvl:0,t,moving?.04:.3);
+    this.lfo.frequency.setTargetAtTime(rate,t,.15);
+    this.tg.gain.setTargetAtTime(turning&&sndOn?.05:0,t,.03);
+  }
+};
+function syncSndUI(){
+  $('snd').textContent='SUONO: '+(sndOn?'ON':'OFF');
+  $('voldb').textContent=sndVol<=0?'muto':Math.round((sndVol/100)*50-50)+' dB';
+}
+$('vol').value=sndVol;syncSndUI();
+$('snd').addEventListener('click',()=>{Snd.resume();sndOn=!sndOn;store.set('co_snd',sndOn?'1':'0');Snd.applyVol();if(!sndOn)Snd.update(false,false,0);syncSndUI();$('snd').blur()});
+$('vol').addEventListener('input',e=>{Snd.resume();sndVol=parseInt(e.target.value,10)||0;store.set('co_vol',String(sndVol));Snd.applyVol();syncSndUI()});
+['click','keydown','pointerdown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>Snd.resume(),{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(Snd.ac){if(document.hidden)Snd.ac.suspend();else Snd.ac.resume()}});
+/* ---------- grafica ---------- */
+function drawTurtle(){
+  const ps=P.ps;if(!ps.vis)return;
+  ctx.save();ctx.translate(X(ps.x),Y(ps.y));ctx.rotate(ps.h*Math.PI/180);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.beginPath();ctx.ellipse(3,4,13,15,0,0,6.2832);ctx.fill();
+  ctx.fillStyle='#3a2a14';
+  [-1,1].forEach(s=>{ctx.fillRect(s*10-3.5,-9,7,18)});
+  ctx.strokeStyle='#6d5434';ctx.lineWidth=1;
+  [-1,1].forEach(s=>{for(let k=-7;k<=7;k+=4){ctx.beginPath();ctx.moveTo(s*10-3.5,k);ctx.lineTo(s*10+3.5,k);ctx.stroke()}});
+  const g=ctx.createRadialGradient(-3,-3,2,0,0,11);g.addColorStop(0,'#f0d58a');g.addColorStop(.6,'#b08a45');g.addColorStop(1,'#6a4f1c');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,9.5,0,6.2832);ctx.fill();ctx.strokeStyle='#3a2a10';ctx.stroke();
+  ctx.fillStyle='#c0642e';ctx.beginPath();ctx.moveTo(-4,-9);ctx.lineTo(0,-18);ctx.lineTo(4,-9);ctx.closePath();ctx.fill();ctx.strokeStyle='#3a2a10';ctx.stroke();
+  ctx.fillStyle='#4a3a20';ctx.beginPath();ctx.arc(-4.5,3,2.6,0,6.2832);ctx.fill();
+  if(ps.pd){ctx.fillStyle=ps.col;ctx.beginPath();ctx.arc(0,0,3,0,6.2832);ctx.fill();ctx.strokeStyle='#2a1a08';ctx.stroke()}
+  else{ctx.strokeStyle='#2a1a08';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(0,0,3,0,6.2832);ctx.stroke()}
+  ctx.restore();
+}
+function drawFrameDeco(){
+  ctx.save();ctx.strokeStyle='rgba(60,40,15,.5)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.fillStyle='rgba(60,40,15,.55)';
+  for(let x=-400;x<=400;x+=100)ctx.fillRect(X(x)-.5,H/2-3,1,6);
+  for(let y=-200;y<=200;y+=100)ctx.fillRect(W/2-3,Y(y)-.5,6,1);
+  ctx.restore();
+}
+let last=0;
+function frame(ts){
+  const dt=Math.min(.05,(ts-last)/1000||.016);last=ts;
+  if(busy())advance(dt);else Snd.update(false,false,0);
+  ctx.fillStyle=P.bg;ctx.fillRect(0,0,W,H);
+  drawFrameDeco();
+  ctx.drawImage(lay,0,0,W,H);
+  for(const s of P.steam){s.life-=dt*1.1;s.x+=s.vx*dt;s.y+=s.vy*dt}
+  P.steam=P.steam.filter(s=>s.life>0);
+  for(const s of P.steam){ctx.fillStyle='rgba(90,80,70,'+(s.life*.25)+')';ctx.beginPath();ctx.arc(X(s.x),Y(s.y),s.r*(2-s.life),0,6.2832);ctx.fill()}
+  drawTurtle();
+  /* cornice con rivetti */
+  ctx.strokeStyle='#6d5434';ctx.lineWidth=6;ctx.strokeRect(3,3,W-6,H-6);
+  ctx.fillStyle='#b08a45';[[10,10],[W-10,10],[10,H-10],[W-10,H-10]].forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],3,0,6.2832);ctx.fill()});
+  const ps=P.ps;
+  $('stat').innerHTML='&#9881; '+(busy()?'IN ESECUZIONE':'FERMO');
+  $('pos').textContent='x '+Math.round(ps.x*10)/10+' · y '+Math.round(ps.y*10)/10+' · direzione '+Math.round(((ps.h%360)+360)%360)+' · penna '+(ps.pd?'abbassata':'sollevata');
+  requestAnimationFrame(frame);
+}
+/* ---------- esecuzione ---------- */
+const interp=(typeof I!=='undefined')?I:null;
+function setMsg(t){$('msg').textContent=t}
+function pushOps(){const o=interp.takeOps();for(const x of o)P.q.push(x)}
+function runProgram(){
+  const text=$('ed').value;
+  store.set('co_draft',text);
+  interp.reset();resetPlayer();con.textContent='';
+  interp.run(text);pushOps();
+  setMsg('');
+}
+function runCmd(){
+  const inp=$('cmd'),text=inp.value.trim();if(!text)return;
+  hist.push(text);histI=hist.length;
+  conPrint('> '+text,'m');
+  syncInterp();interp.run(text);pushOps();inp.value='';
+}
+let hist=[],histI=0;
+function syncInterp(){ /* l'interprete è sempre in anticipo sul disegno: se si interrompe, riallinea */
+  if(!busy())return;
+}
+function stopRun(){
+  if(!busy())return;
+  const ps=P.ps,t=interp.t;
+  P.q=[];P.qi=0;P.cur=null;
+  t.x=ps.x;t.y=ps.y;t.h=((ps.h%360)+360)%360;t.pd=ps.pd;t.col=ps.col;t.sz=ps.sz;t.vis=ps.vis;
+  conPrint('Esecuzione interrotta.','m');
+}
+$('run').addEventListener('click',()=>{runProgram();$('run').blur()});
+$('stop').addEventListener('click',()=>{stopRun();$('stop').blur()});
+$('clr').addEventListener('click',()=>{stopRun();interp.run('cs');pushOps();$('clr').blur()});
+$('cmdgo').addEventListener('click',()=>{runCmd();$('cmd').focus()});
+$('cmd').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();runCmd()}
+  else if(e.key==='ArrowUp'&&hist.length){e.preventDefault();histI=Math.max(0,histI-1);$('cmd').value=hist[histI]}
+  else if(e.key==='ArrowDown'&&hist.length){e.preventDefault();histI=Math.min(hist.length,histI+1);$('cmd').value=hist[histI]||''}
+});
+$('ed').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();runProgram()}});
+$('ed').addEventListener('input',()=>{store.set('co_draft',$('ed').value)});
+$('speed').addEventListener('change',()=>{store.set('co_speed',$('speed').value)});
+/* ---------- scorciatoie ---------- */
+const PAL_BTN=[
+ ['FD 100','AVANTI 100'],['BK 100','INDIETRO 100'],['RT 90','DESTRA 90'],['LT 90','SINISTRA 90'],
+ ['PU','ALZAPENNA'],['PD','ABBASSAPENNA'],['SETPC 4','IMPOSTACOLOREPENNA 4'],['SETXY 0 0','IMPOSTAXY 0 0'],
+ ['HOME','CASA'],['REPEAT 4 [ ]','RIPETI 4 [ ]'],['IF  [ ]','SE  [ ]'],['MAKE "N 0','ASSEGNA "N 0'],
+ ['PRINT "CIAO','SCRIVI "CIAO'],['TO NOME :X\n  \nEND\n','PER NOME :X\n  \nFINE\n']
+];
+let lexIT=store.get('co_lex','it')!=='en',lastFocus=$('ed');
+function buildPal(){
+  const box=$('pal');box.innerHTML='';
+  PAL_BTN.forEach(p=>{
+    const b=document.createElement('button'),t=lexIT?p[1]:p[0];
+    b.textContent=t.split('\n')[0]+(t.includes('\n')?' …':'');
+    b.addEventListener('mousedown',e=>e.preventDefault());
+    b.addEventListener('click',()=>insertText(t));
+    box.appendChild(b);
+  });
+  $('lex').textContent=lexIT?'ITALIANO':'INGLESE';
+}
+function insertText(t){
+  const el=lastFocus||$('ed');
+  const s=el.selectionStart,e=el.selectionEnd,v=el.value;
+  const add=t+(el===$('ed')&&!t.endsWith('\n')?' ':'');
+  el.value=v.slice(0,s)+add+v.slice(e);
+  const br=add.indexOf('[ ]'),p=br>=0?s+br+2:(add.includes('\n  \n')?s+add.indexOf('\n  \n')+3:s+add.length);
+  el.focus();el.setSelectionRange(p,p);
+  if(el===$('ed'))store.set('co_draft',el.value);
+}
+$('ed').addEventListener('focus',()=>{lastFocus=$('ed')});
+$('cmd').addEventListener('focus',()=>{lastFocus=$('cmd')});
+$('lex').addEventListener('click',()=>{lexIT=!lexIT;store.set('co_lex',lexIT?'it':'en');buildPal();$('lex').blur()});
+/* ---------- esempi, salvataggio, file ---------- */
+function backupCurrent(){
+  const t=$('ed').value.trim();if(!t)return false;
+  const all=progs(),known=Object.values(all).some(v=>v===$('ed').value);
+  const exa=EXAMPLES.some(e=>e.text===$('ed').value);
+  if(known||exa)return false;
+  all['(precedente)']=$('ed').value;saveProgs(all);refreshSaved();return true;
+}
+function setEditor(text,what){
+  const b=backupCurrent();
+  $('ed').value=text;store.set('co_draft',text);
+  setMsg(what+(b?' Il programma che c\'era prima è stato conservato fra i salvati con il nome "(precedente)".':''));
+}
+function refreshSaved(sel){
+  const all=progs(),names=Object.keys(all).sort(),s=$('sv');s.innerHTML='';
+  names.forEach(n=>{const o=document.createElement('option');o.textContent=n;o.value=n;s.appendChild(o)});
+  if(sel&&names.includes(sel))s.value=sel;
+  $('load').disabled=$('del').disabled=!names.length;
+}
+EXAMPLES.forEach((e,i)=>{const o=document.createElement('option');o.value=i;o.textContent=e.name;$('exs').appendChild(o)});
+$('exload').addEventListener('click',()=>{const e=EXAMPLES[+$('exs').value];setEditor(e.text,'Esempio caricato: "'+e.name+'". Premi ESEGUI IL PROGRAMMA.');$('exload').blur()});
+$('save').addEventListener('click',()=>{
+  const name=$('nm').value.trim().replace(/\s+/g,' ');
+  if(!name){setMsg('Scrivi un nome per il programma, poi premi SALVA.');return}
+  const all=progs(),had=name in all;all[name]=$('ed').value;
+  if(saveProgs(all)){refreshSaved(name);setMsg((had?'Programma aggiornato: ':'Programma salvato: ')+name+'.')}
+  else setMsg('Salvataggio non riuscito: il browser non permette di conservare dati. Usa ESPORTA per ottenere un file.');
+  $('save').blur();
+});
+$('load').addEventListener('click',()=>{
+  const n=$('sv').value,all=progs();if(!(n in all))return;
+  setEditor(all[n],'Programma caricato: '+n+'.');$('nm').value=n==='(precedente)'?'':n;$('load').blur();
+});
+let delArm=0;
+$('del').addEventListener('click',()=>{
+  const n=$('sv').value;if(!n)return;
+  if(!delArm){$('del').textContent='CONFERMA?';delArm=setTimeout(()=>{delArm=0;$('del').textContent='ELIMINA'},3000);return}
+  clearTimeout(delArm);delArm=0;$('del').textContent='ELIMINA';
+  const all=progs();delete all[n];saveProgs(all);refreshSaved();setMsg('Programma eliminato: '+n+'.');$('del').blur();
+});
+$('exp').addEventListener('click',()=>{
+  const name=($('nm').value.trim()||'programma').replace(/[^\w\-. ]+/g,'_');
+  try{
+    const blob=new Blob([$('ed').value],{type:'text/plain;charset=utf-8'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=name+'.logo';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);setMsg('File esportato: '+name+'.logo');
+  }catch(e){setMsg('Esportazione non riuscita.')}
+  $('exp').blur();
+});
+$('imp').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0];if(!f)return;
+  if(f.size>500000){setMsg('File troppo grande (massimo 500 kB).');e.target.value='';return}
+  const r=new FileReader();
+  r.onload=()=>{setEditor(String(r.result).replace(/\r\n?/g,'\n'),'File importato: '+f.name+'.');$('nm').value=f.name.replace(/\.[^.]+$/,'')};
+  r.onerror=()=>setMsg('Lettura del file non riuscita.');
+  r.readAsText(f);e.target.value='';
+});
+/* ---------- guida ---------- */
+function buildHelp(){
+  const cats=[];PRIMS.forEach(p=>{if(!cats.includes(p.cat))cats.push(p.cat)});
+  let h='<table><thead><tr><th>Inglese</th><th>Italiano</th><th>Dati</th><th>Cosa fa</th></tr></thead><tbody>';
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  cats.forEach(c=>{
+    h+='<tr><td class="c" colspan="4">'+c.toUpperCase()+'</td></tr>';
+    PRIMS.filter(p=>p.cat===c).forEach(p=>{
+      h+='<tr><td class="k">'+p.en.map(s=>s.toUpperCase()).join(' / ')+'</td><td class="k">'+p.it.map(s=>s.toUpperCase()).join(' / ')+'</td><td>'+esc(p.sig||'')+'</td><td>'+esc(p.doc)+'</td></tr>';
+    });
+  });
+  h+='<tr><td class="c" colspan="4">DEFINIZIONI</td></tr><tr><td class="k">TO nome :a :b ... END</td><td class="k">PER nome :a :b ... FINE</td><td></td><td>Definisce un nuovo comando.</td></tr>';
+  h+='<tr><td class="c" colspan="4">OPERATORI</td></tr><tr><td class="k">+ - * /</td><td class="k">+ - * /</td><td></td><td>Aritmetica; la moltiplicazione e la divisione precedono somma e sottrazione. Le parentesi tonde cambiano l\'ordine.</td></tr>';
+  h+='<tr><td class="k">= &lt;&gt; &lt; &gt; &lt;= &gt;=</td><td class="k">= &lt;&gt; &lt; &gt; &lt;= &gt;=</td><td></td><td>Confronti: danno VERO o FALSO. &lt;&gt; significa "diverso".</td></tr>';
+  h+='</tbody></table>';
+  $('help').innerHTML=h;
+  $('helpnote').textContent='Nomi italiani: AVANTI e INDIETRO (e le abbreviazioni A e I) risultano dalla localizzazione italiana di FMSLogo; gli altri nomi italiani sono provvisori e non sono stati confrontati con quella localizzazione. In italiano SE significa IF; l\'abbreviazione inglese SE (SENTENCE) non è disponibile, si usa FRASE o SENTENCE. Una procedura può avere lo stesso nome di un alias italiano (che viene sostituito), ma non di un comando inglese.';
+}
+/* ---------- avvio ---------- */
+$('ed').value=store.get('co_draft',EXAMPLES[0].text);
+$('speed').value=store.get('co_speed','450');if($('speed').value!==store.get('co_speed','450'))$('speed').value='450';
+buildPal();buildHelp();refreshSaved();
+window.__co={Snd:Snd,interp:interp,P:P,runProgram:runProgram,runCmd:runCmd,busy:busy};
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
