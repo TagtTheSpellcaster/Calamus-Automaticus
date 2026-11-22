@@ -1,16 +1,12 @@
 # Calamus Automaticus
 
 ![Brevetto meccanico](https://img.shields.io/badge/BREVETTO%20MECCANICO-1.2-b8860b)
-![Machina](https://img.shields.io/badge/Machina%20N%C2%B0-009-8a6c42)
-![Anno](https://img.shields.io/badge/anno-1894-5a4632)
 ![Licenza](https://img.shields.io/badge/licenza-AGPL--3.0-blue)
 ![Linguaggio](https://img.shields.io/badge/linguaggio-Logo-informational)
 ![Lingue](https://img.shields.io/badge/comandi-italiano%20%7C%20inglese-informational)
 ![HTML5](https://img.shields.io/badge/HTML5-canvas-e34f26?logo=html5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-f7df1e?logo=javascript&logoColor=black)
 ![Web Audio](https://img.shields.io/badge/audio-Web%20Audio%20API-informational)
-![Dipendenze](https://img.shields.io/badge/dipendenze-nessuna-brightgreen)
-![File singolo](https://img.shields.io/badge/file-singolo-informational)
 
 Interprete Logo in un unico file HTML, con grafica a tartaruga in versione steampunk: un automa-pantografo traccia su un foglio le figure descritte da un programma. I comandi si scrivono in inglese o in italiano. Il linguaggio è un sottoinsieme del nucleo di FMSLogo. Machina N° 009 della serie OFFICINA DEGLI ENIGMI. Il nome è provvisorio.
 
