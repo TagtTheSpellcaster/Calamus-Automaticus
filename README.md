@@ -1,8 +1,6 @@
 # Calamus Automaticus
 
-![Brevetto meccanico](https://img.shields.io/badge/BREVETTO%20MECCANICO-1.3.1-b8860b)
-![Machina](https://img.shields.io/badge/Machina%20N%C2%B0-009-8a6c42)
-![Anno](https://img.shields.io/badge/anno-1894-5a4632)
+![Version](https://img.shields.io/badge/VERSIONE-1.3.1-b8860b)
 ![Licenza](https://img.shields.io/badge/licenza-AGPL--3.0-blue)
 ![Linguaggio](https://img.shields.io/badge/linguaggio-Logo-informational)
 ![Lingue](https://img.shields.io/badge/comandi-italiano%20%7C%20inglese-informational)
