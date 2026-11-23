@@ -1,18 +1,20 @@
 # Calamus Automaticus
 
-![Brevetto meccanico](https://img.shields.io/badge/BREVETTO%20MECCANICO-1.2-b8860b)
+![Brevetto meccanico](https://img.shields.io/badge/BREVETTO%20MECCANICO-1.3.1-b8860b)
+![Machina](https://img.shields.io/badge/Machina%20N%C2%B0-009-8a6c42)
+![Anno](https://img.shields.io/badge/anno-1894-5a4632)
 ![Licenza](https://img.shields.io/badge/licenza-AGPL--3.0-blue)
 ![Linguaggio](https://img.shields.io/badge/linguaggio-Logo-informational)
 ![Lingue](https://img.shields.io/badge/comandi-italiano%20%7C%20inglese-informational)
 ![HTML5](https://img.shields.io/badge/HTML5-canvas-e34f26?logo=html5&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-f7df1e?logo=javascript&logoColor=black)
 ![Web Audio](https://img.shields.io/badge/audio-Web%20Audio%20API-informational)
+![Dipendenze](https://img.shields.io/badge/dipendenze-nessuna-brightgreen)
+![File singolo](https://img.shields.io/badge/file-singolo-informational)
 
 Interprete Logo in un unico file HTML, con grafica a tartaruga in versione steampunk: un automa-pantografo traccia su un foglio le figure descritte da un programma. I comandi si scrivono in inglese o in italiano. Il linguaggio è un sottoinsieme del nucleo di FMSLogo. Machina N° 009 della serie OFFICINA DEGLI ENIGMI. Il nome è provvisorio.
 
-**BREVETTO MECCANICO 1.2 – 1894**
-
-[Puoi giocarci qui](https://tagtthespellcaster.github.io/Calamus-Automaticus/)
+**BREVETTO MECCANICO 1.3.1 – 1894**
 
 ## Requisiti
 
@@ -37,7 +39,7 @@ Il browser attiva l'audio solo dopo un'azione dell'utente: il suono parte al pri
 - **Riga di comando:** sotto l'editor si può scrivere un singolo comando e premere Invio. Il comando viene eseguito subito, senza azzerare nulla: l'automa, le variabili e le procedure del programma restano quelle di prima. Con le frecce su e giù si richiamano i comandi precedenti.
 - **Console:** mostra l'output di `PRINT`, `SHOW` e `TYPE` e i messaggi d'errore. In caso di errore, il disegno eseguito fino a quel punto resta sullo schermo.
 - **STOP** interrompe l'esecuzione in corso; **PULISCI SCHERMO** cancella il disegno e riporta l'automa al centro.
-- **Velocità:** lenta, normale, veloce o istantanea (il disegno compare subito).
+- **Velocità:** un volano e un manometro regolano la velocità in modo continuo, da 120 a 2400 unità al secondo (scala logaritmica, così la sensibilità è uniforme). Si regola trascinando la lancetta del manometro, oppure girando il volano con il dito o il mouse (un giro completo copre tutta la scala); con la tastiera, dopo aver selezionato il quadrante, valgono le frecce (più Maiusc per passi più grandi), `Home` e `Fine`. Il volano è solo un regolatore: resta fermo e si muove soltanto quando lo si gira, o quando si cambia la velocità in altro modo (lancetta, tastiera). La leva **ISTANTANEO** (OFF/ON) fa comparire il disegno subito, senza animazione né suoni di movimento; con la leva su ON la lancetta va a fondo scala e il quadrante si oscura, ma la velocità scelta viene ricordata.
 - **Pulsanti di scorciatoia** sotto l'editor inseriscono comandi frequenti nel punto in cui si trova il cursore, nel lessico scelto con il pulsante **LESSICO DEI PULSANTI** (italiano o inglese).
 - **Guida ai comandi:** una tabella ripiegabile, in fondo alla pagina, con tutti i comandi nelle due lingue.
 
@@ -206,7 +208,7 @@ Nel menu **ESEMPI** sono presenti nove programmi, scritti in italiano o in ingle
 - **SALVA**, **CARICA** ed **ELIMINA** gestiscono i programmi nel browser (`localStorage`). `ELIMINA` richiede una seconda pressione per confermare.
 - **ESPORTA (.logo)** scarica il programma dell'editor come file di testo; **IMPORTA FILE** carica un file `.logo` o `.txt` (massimo 500 kB) nell'editor.
 - Il testo dell'editor è salvato automaticamente come bozza e ricompare alla riapertura della pagina.
-- Chiavi usate: `co_progs`, `co_draft`, `co_speed`, `co_lex`, `co_snd`, `co_vol`. L'accesso è protetto da `try/catch`: senza storage il gioco funziona, ma non salva.
+- Chiavi usate: `co_progs`, `co_draft`, `co_v`, `co_inst`, `co_lex`, `co_snd`, `co_vol`. L'accesso è protetto da `try/catch`: senza storage il gioco funziona, ma non salva.
 
 ## Suoni
 
@@ -240,4 +242,4 @@ Distribuito con licenza GNU Affero General Public License, versione 3 (AGPL-3.0)
 
 ## Serie
 
-OFFICINA DEGLI ENIGMI · Machina N° 009 · BREVETTO MECCANICO 1.2 – 1894
+OFFICINA DEGLI ENIGMI · Machina N° 009 · BREVETTO MECCANICO 1.3.1 – 1894

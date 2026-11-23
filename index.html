@@ -40,6 +40,11 @@ td.c{color:#a8885a;font-size:11px}
 .msg{min-height:20px;font-size:13px;color:#eac27f;margin:2px 0}
 .footer{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:10px;border-top:1px solid #806344;font:11px Georgia,serif;letter-spacing:.14em;color:#a8885a}
 h2{font:600 12px ui-monospace,monospace;letter-spacing:.08em;color:#c79a56;margin:0 0 5px}
+canvas#gov{width:420px;max-width:100%;height:auto;touch-action:none;border-radius:10px;cursor:grab}
+canvas#gov:active{cursor:grabbing}
+.gov{align-items:center;gap:16px}.inst{display:flex;flex-direction:column;align-items:center;gap:4px}
+.inst button{padding:0;border:0;background:none;border-radius:9px;line-height:0}
+.inst button:active{background:none}
 </style>
 </head>
 <body>
@@ -53,7 +58,17 @@ h2{font:600 12px ui-monospace,monospace;letter-spacing:.08em;color:#c79a56;margi
 <button id="run">ESEGUI IL PROGRAMMA</button>
 <button id="stop">STOP</button>
 <button id="clr">PULISCI SCHERMO</button>
-<label class="lab">VELOCITÀ <select id="speed"><option value="150">lenta</option><option value="450" selected>normale</option><option value="1800">veloce</option><option value="0">istantanea</option></select></label>
+</div>
+<div class="row gov">
+<canvas id="gov" width="420" height="170" role="slider" tabindex="0" aria-label="Velocità: volano e manometro, da lenta a veloce" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></canvas>
+<div class="inst"><span class="lab">ISTANTANEO</span>
+<button id="inst" role="switch" aria-checked="false" aria-label="Modalità istantanea" title="Istantaneo: il disegno compare subito, senza animazione">
+<svg viewBox="0 0 96 74" width="96" height="74" aria-hidden="true"><rect x="2" y="2" width="92" height="70" rx="9" fill="#2a2218" stroke="#99764b" stroke-width="2.5"/>
+<circle cx="9" cy="9" r="2" fill="#b08a45"/><circle cx="87" cy="9" r="2" fill="#b08a45"/>
+<text x="7" y="67" fill="#a8885a" font-size="10" font-family="Georgia,serif" letter-spacing=".5">OFF</text><text x="69" y="67" fill="#a8885a" font-size="11" font-family="Georgia,serif" letter-spacing="1" id="swon">ON</text>
+<path d="M34 64 h28 l-3 -12 h-22 z" fill="#6a4f1c" stroke="#3a2a10"/><circle cx="48" cy="52" r="7" fill="#b08a45" stroke="#3a2a10"/>
+<g id="lever" style="transform-origin:48px 52px;transform:rotate(-38deg);transition:transform .18s"><rect x="45.5" y="22" width="5" height="32" rx="2.5" fill="#8a6a30" stroke="#3a2a10"/><circle cx="48" cy="22" r="7.5" fill="#c0482e" stroke="#3a2a10"/><circle cx="46" cy="20" r="2.2" fill="#f0b090"/></g></svg>
+</button></div>
 </div>
 <div class="row">
 <button id="snd">SUONO: ON</button>
@@ -90,7 +105,7 @@ h2{font:600 12px ui-monospace,monospace;letter-spacing:.08em;color:#c79a56;margi
 <p class="note" id="helpnote"></p>
 </details>
 <p class="note" style="margin-top:12px">Il linguaggio è un sottoinsieme del nucleo di FMSLogo; non tutti i comandi di FMSLogo sono presenti (mancano, fra gli altri, FILL, più tartarughe, suoni, file, WRAP e FENCE). Il programma nell'editor viene salvato automaticamente quando lo esegui.</p>
-<div class="footer"><span>OFFICINA DEGLI ENIGMI · Machina N° 009</span><span>BREVETTO MECCANICO 1.2 – 1894</span></div>
+<div class="footer"><span>OFFICINA DEGLI ENIGMI · Machina N° 009</span><span>BREVETTO MECCANICO 1.3.1 – 1894</span></div>
 </main>
 <script>
 (()=>{
@@ -520,7 +535,7 @@ function resetPlayer(){
 function immediate(op){
   const ps=P.ps;
   switch(op.k){
-    case 'pen':ps.pd=op.pd;if(parseFloat($('speed').value)>0)Snd.pen(op.pd);return true;
+    case 'pen':ps.pd=op.pd;if(!instOn)Snd.pen(op.pd);return true;
     case 'col':ps.col=op.col;return true;
     case 'sz':ps.sz=op.sz;return true;
     case 'vis':ps.vis=op.vis;return true;
@@ -534,7 +549,7 @@ function immediate(op){
   return false;
 }
 function advance(dt){
-  const sp=parseFloat($('speed').value),inst=sp===0,t0=performance.now();
+  const inst=instOn,sp=inst?0:speedOf(spV),t0=performance.now();
   let bpx=inst?Infinity:sp*dt,bdeg=inst?Infinity:sp*0.8*dt,moved=false,turned=false;
   const ps=P.ps;
   while(P.qi<P.q.length){
@@ -650,6 +665,106 @@ $('snd').addEventListener('click',()=>{Snd.resume();sndOn=!sndOn;store.set('co_s
 $('vol').addEventListener('input',e=>{Snd.resume();sndVol=parseInt(e.target.value,10)||0;store.set('co_vol',String(sndVol));Snd.applyVol();syncSndUI()});
 ['click','keydown','pointerdown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>Snd.resume(),{passive:true}));
 document.addEventListener('visibilitychange',()=>{if(Snd.ac){if(document.hidden)Snd.ac.suspend();else Snd.ac.resume()}});
+
+/* ---------- volano con manometro e selettore istantaneo ---------- */
+let spV=parseFloat(store.get('co_v','45'));if(!(spV>=0&&spV<=100))spV=45;
+let instOn=store.get('co_inst','0')==='1';
+const speedOf=v=>Math.round(120*Math.pow(20,v/100));   /* 120 .. 2400 unità/s, scala logaritmica; v=45 ≈ 463 */
+const gv=$('gov'),gx=gv.getContext('2d'),GW=420,GH=170;
+gv.width=GW*DPR;gv.height=GH*DPR;gx.scale(DPR,DPR);
+const FC={x:100,y:88,r:66},GC={x:312,y:88,r:68};
+const GOV={needle:spV,fw:0,om:.35,drag:null};
+function setSpeedV(v,save){
+  spV=Math.max(0,Math.min(100,v));gv.setAttribute('aria-valuenow',String(Math.round(spV)));
+  gv.setAttribute('aria-valuetext',speedOf(spV)+' unità al secondo');
+  if(save!==false)store.set('co_v',String(Math.round(spV*10)/10));
+}
+function setInst(on){
+  instOn=!!on;$('inst').setAttribute('aria-checked',String(instOn));
+  $('lever').style.transform='rotate('+(instOn?38:-38)+'deg)';
+  store.set('co_inst',instOn?'1':'0');
+}
+$('inst').addEventListener('click',()=>{setInst(!instOn);$('inst').blur()});
+function gpt(e){const r=gv.getBoundingClientRect();return {x:(e.clientX-r.left)*GW/r.width,y:(e.clientY-r.top)*GH/r.height}}
+const angDeg=(p,c)=>Math.atan2(p.x-c.x,-(p.y-c.y))*180/Math.PI;
+function gaugeSet(p){let a=angDeg(p,GC);if(a>135||a<-135)a=a>0?(a>157?-135:135):(a<-157?135:-135);if(a>135)a=135;if(a<-135)a=-135;setSpeedV((a+135)/270*100)}
+gv.addEventListener('pointerdown',e=>{
+  const p=gpt(e),dg=Math.hypot(p.x-GC.x,p.y-GC.y),df=Math.hypot(p.x-FC.x,p.y-FC.y);
+  if(dg<=GC.r+8){GOV.drag={k:'g'};gaugeSet(p)}
+  else if(df<=FC.r+6){GOV.drag={k:'f',a:angDeg(p,FC),v:spV}}
+  else return;
+  try{gv.setPointerCapture(e.pointerId)}catch(x){}
+  gv.focus();e.preventDefault();
+});
+gv.addEventListener('pointermove',e=>{
+  if(!GOV.drag)return;const p=gpt(e);
+  if(GOV.drag.k==='g')gaugeSet(p);
+  else{let d=angDeg(p,FC)-GOV.drag.a;d=((d+540)%360)-180;GOV.drag.a=angDeg(p,FC);GOV.fwv=(GOV.fwv||0)+d;setSpeedV(spV+d/360*100)}
+});
+const endG=()=>{GOV.drag=null};
+gv.addEventListener('pointerup',endG);gv.addEventListener('pointercancel',endG);
+gv.addEventListener('keydown',e=>{
+  const st=e.shiftKey?10:4;
+  if(e.key==='ArrowRight'||e.key==='ArrowUp'){setSpeedV(spV+st);e.preventDefault()}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){setSpeedV(spV-st);e.preventDefault()}
+  else if(e.key==='Home'){setSpeedV(0);e.preventDefault()}
+  else if(e.key==='End'){setSpeedV(100);e.preventDefault()}
+});
+function drawGov(ts,dt){
+  const g=gx;g.clearRect(0,0,GW,GH);
+  /* piastra */
+  const bg=g.createLinearGradient(0,0,0,GH);bg.addColorStop(0,'#3a3022');bg.addColorStop(1,'#241c12');
+  g.fillStyle=bg;g.beginPath();g.rect(0,0,GW,GH);g.fill();
+  g.strokeStyle='#806344';g.lineWidth=2;g.strokeRect(1,1,GW-2,GH-2);
+  g.fillStyle='#b08a45';[[9,9],[GW-9,9],[9,GH-9],[GW-9,GH-9]].forEach(p=>{g.beginPath();g.arc(p[0],p[1],2.6,0,6.2832);g.fill()});
+  /* volano */
+  GOV.fw=spV/100*2*Math.PI;   /* il volano è un regolatore: la sua posizione dipende solo dalla velocità scelta, un giro per l'intera scala */
+  g.save();g.translate(FC.x,FC.y);
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.arc(3,5,FC.r,0,6.2832);g.fill();
+  const rg=g.createRadialGradient(-12,-12,10,0,0,FC.r);rg.addColorStop(0,'#d9b866');rg.addColorStop(.7,'#9a7433');rg.addColorStop(1,'#5a4018');
+  g.fillStyle=rg;g.beginPath();g.arc(0,0,FC.r,0,6.2832);g.fill();g.strokeStyle='#2e200a';g.lineWidth=1.5;g.stroke();
+  g.rotate(GOV.fw);
+  g.fillStyle='#241a0c';g.beginPath();g.arc(0,0,FC.r-11,0,6.2832);g.fill();
+  const fg=g.createLinearGradient(-40,-40,40,40);fg.addColorStop(0,'#caa456');fg.addColorStop(1,'#6a4f1c');
+  g.strokeStyle=fg;g.lineWidth=8;
+  for(let k=0;k<6;k++){g.save();g.rotate(k*Math.PI/3);g.beginPath();g.moveTo(0,0);g.lineTo(0,-(FC.r-12));g.stroke();g.restore()}
+  g.fillStyle='#8a6a30';for(let k=0;k<6;k++){g.save();g.rotate(k*Math.PI/3+Math.PI/6);g.beginPath();g.arc(0,-(FC.r-6),3,0,6.2832);g.fill();g.restore()}
+  const hg=g.createRadialGradient(-3,-3,2,0,0,14);hg.addColorStop(0,'#f0d58a');hg.addColorStop(1,'#6a4f1c');
+  g.fillStyle=hg;g.beginPath();g.arc(0,0,13,0,6.2832);g.fill();g.strokeStyle='#2e200a';g.lineWidth=1.2;g.stroke();
+  g.fillStyle='#3a2a10';g.beginPath();g.arc(0,0,3.5,0,6.2832);g.fill();
+  g.restore();
+  /* manometro */
+  g.save();g.translate(GC.x,GC.y);
+  const bz=g.createLinearGradient(-GC.r,-GC.r,GC.r,GC.r);bz.addColorStop(0,'#e0bf74');bz.addColorStop(.5,'#8a6a30');bz.addColorStop(1,'#c9a55a');
+  g.fillStyle=bz;g.beginPath();g.arc(0,0,GC.r,0,6.2832);g.fill();g.strokeStyle='#2e200a';g.lineWidth=1.5;g.stroke();
+  g.fillStyle='#efe3c2';g.beginPath();g.arc(0,0,GC.r-8,0,6.2832);g.fill();g.strokeStyle='#6d5434';g.lineWidth=1;g.stroke();
+  const A=d=>(d-90)*Math.PI/180;      /* d: gradi dal "dodici", positivi in senso orario */
+  /* zona rossa */
+  g.strokeStyle='rgba(192,72,46,.75)';g.lineWidth=5;g.beginPath();g.arc(0,0,GC.r-17,A(135*0.8),A(135));g.stroke();
+  g.strokeStyle='#2a1a08';
+  for(let k=0;k<=50;k++){
+    const d=-135+k*270/50,major=k%5===0,r1=GC.r-10,r2=r1-(major?10:5);
+    g.lineWidth=major?1.8:.9;g.beginPath();g.moveTo(Math.cos(A(d))*r1,Math.sin(A(d))*r1);g.lineTo(Math.cos(A(d))*r2,Math.sin(A(d))*r2);g.stroke();
+  }
+  g.fillStyle='#3a2a10';g.font='bold 7px Georgia,serif';g.textAlign='center';
+  g.fillText('LENTO',-21,GC.r-38);g.fillText('VELOCE',21,GC.r-38);
+  g.font='9px Georgia,serif';g.fillText('VELOCITÀ',0,-22);
+  g.font='bold 10px ui-monospace,monospace';g.fillStyle=instOn?'#a8885a':'#3a2a10';g.fillText(instOn?'ISTANT.':speedOf(spV),0,44);
+  /* lancetta */
+  const tv=instOn?100:spV;GOV.needle+=(tv-GOV.needle)*Math.min(1,dt*7);
+  const jit=busy()&&!instOn?Math.sin(ts/55)*.7+Math.sin(ts/23)*.4:0,nd=-135+(GOV.needle/100)*270+jit;
+  g.save();g.rotate(A(nd)+Math.PI/2);
+  g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.moveTo(1.5,3);g.lineTo(3.5,-(GC.r-20)+3);g.lineTo(-.5,-(GC.r-20)+3);g.closePath();g.fill();
+  g.fillStyle='#8a2a14';g.beginPath();g.moveTo(-2.4,6);g.lineTo(0,-(GC.r-19));g.lineTo(2.4,6);g.closePath();g.fill();
+  g.fillStyle='#5a1a0c';g.fillRect(-3.2,6,6.4,13);
+  g.restore();
+  g.fillStyle='#3a2a10';g.beginPath();g.arc(0,0,5,0,6.2832);g.fill();g.fillStyle='#b08a45';g.beginPath();g.arc(-1,-1,2,0,6.2832);g.fill();
+  /* vetro */
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=3;g.beginPath();g.arc(0,0,GC.r-14,A(-150),A(-95));g.stroke();
+  if(instOn){g.fillStyle='rgba(30,20,10,.28)';g.beginPath();g.arc(0,0,GC.r-8,0,6.2832);g.fill()}
+  g.restore();
+  if(document.activeElement===gv){g.strokeStyle='#c79a56';g.lineWidth=2;g.strokeRect(3,3,GW-6,GH-6)}
+}
 /* ---------- grafica ---------- */
 function drawTurtle(){
   const ps=P.ps;if(!ps.vis)return;
@@ -686,6 +801,7 @@ function frame(ts){
   P.steam=P.steam.filter(s=>s.life>0);
   for(const s of P.steam){ctx.fillStyle='rgba(90,80,70,'+(s.life*.25)+')';ctx.beginPath();ctx.arc(X(s.x),Y(s.y),s.r*(2-s.life),0,6.2832);ctx.fill()}
   drawTurtle();
+  drawGov(ts,dt);
   /* cornice con rivetti */
   ctx.strokeStyle='#6d5434';ctx.lineWidth=6;ctx.strokeRect(3,3,W-6,H-6);
   ctx.fillStyle='#b08a45';[[10,10],[W-10,10],[10,H-10],[W-10,H-10]].forEach(p=>{ctx.beginPath();ctx.arc(p[0],p[1],3,0,6.2832);ctx.fill()});
@@ -733,7 +849,6 @@ $('cmd').addEventListener('keydown',e=>{
 });
 $('ed').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();runProgram()}});
 $('ed').addEventListener('input',()=>{store.set('co_draft',$('ed').value)});
-$('speed').addEventListener('change',()=>{store.set('co_speed',$('speed').value)});
 /* ---------- scorciatoie ---------- */
 const PAL_BTN=[
  ['FD 100','AVANTI 100'],['BK 100','INDIETRO 100'],['RT 90','DESTRA 90'],['LT 90','SINISTRA 90'],
@@ -843,9 +958,8 @@ function buildHelp(){
 }
 /* ---------- avvio ---------- */
 $('ed').value=store.get('co_draft',EXAMPLES[0].text);
-$('speed').value=store.get('co_speed','450');if($('speed').value!==store.get('co_speed','450'))$('speed').value='450';
-buildPal();buildHelp();refreshSaved();
-window.__co={Snd:Snd,interp:interp,P:P,runProgram:runProgram,runCmd:runCmd,busy:busy};
+setSpeedV(spV,false);setInst(instOn);buildPal();buildHelp();refreshSaved();
+window.__co={setV:v=>setSpeedV(v),setInst:setInst,speedOf:speedOf,Snd:Snd,interp:interp,P:P,runProgram:runProgram,runCmd:runCmd,busy:busy};
 requestAnimationFrame(frame);
 })();
 </script>
